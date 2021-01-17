@@ -4,15 +4,27 @@ import { isAuthenticated } from '../auth';
 import { read } from './apiUser'; 
 import DefaultProfile from '../images/avatar.jpeg';
 import DeleteUser from './DeleteUser';
+import FollowProfileButton from './FollowProfileButton';
 
 
 class Profile extends Component {
     constructor() {
         super();
         this.state = {
-            user: "",
-            redirectToSignin: false
+            user: {following: [], followers: []},
+            redirectToSignin: false,
+            following: false
         }
+    }
+
+    //Check follow
+    checkFollow = user => {
+        const jwt = isAuthenticated()
+        const match = user.followers.find(follower => {
+            //one id has many other other ids (followers) and vice versa
+            return follower._id === jwt.user._id;
+        })
+        return match;
     }
 
     init = (userId) => {
@@ -22,7 +34,8 @@ class Profile extends Component {
             if(data.error) {
                 this.setState({ redirectToSignin: true});
             } else {
-                this.setState({user: data});
+                let following = this.checkFollow(data)
+                this.setState({user: data, following});
             }
         });
     }
@@ -59,13 +72,14 @@ class Profile extends Component {
                             <p>Email: {user.email}</p>
                             <p>{`Joined ${new Date(user.created).toString()}`}</p>
                         </div>
-                        {isAuthenticated().user && isAuthenticated().user._id === user._id && (
+                        {isAuthenticated().user && isAuthenticated().user._id === user._id ? (
                             <div className="d-inline-block">
                                 <Link className="btn btn-raised btn-success mr-5" to={`/user/edit/${user._id}`}>
                                     Edit Profile
                                 </Link>
                                 <DeleteUser userId={user._id} />
                             </div>
+                        ) : ( <FollowProfileButton following={this.state.following} />
                         )}
                     </div>
                 </div>
